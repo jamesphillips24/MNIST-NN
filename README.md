@@ -1,1 +1,1 @@
-Cant add the training data on here because the files is too big
+Neural network to learn to recognize hand drawn digits from the MNIST database.
