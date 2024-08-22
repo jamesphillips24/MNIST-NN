@@ -1,14 +1,18 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import random
 import math
+
+# James Phillips
+# Raw Python and Numpy neural network to learn to recognize hand written numbers
 
 training_data = pd.read_csv('mnist_train.csv')
 training_data = np.array(training_data)
 
 label = np.zeros((60000, 10))
 for i in range(60000):
-    label[i][training_data[i][0]] = 1
+    label[i][training_data[i][0]] = 1 # One hot encoded
 training_data = training_data[0:, 1:] / 255 # normalized
 
 test_data = pd.read_csv('mnist_test.csv')
@@ -16,7 +20,7 @@ test_data = np.array(test_data)
 
 label1 = np.zeros((10000, 10))
 for i in range(10000):
-    label1[i][test_data[i][0]] = 1
+    label1[i][test_data[i][0]] = 1 # One hot encoded
 test_data = test_data[0:, 1:] / 255 # normalized
 
 def relu(z):
@@ -68,16 +72,22 @@ def backward(dataset, y, a1, a2, a3, z1, z2, z3, w1, w2, w3, dw1, db1, dw2, db2,
     return dw1, db1, dw2, db2, dw3, db3
 
 
-
-firstlayersize = 64
-secondlayersize = 64
-outputsize = 10
+firstlayersize, secondlayersize, outputsize = 64, 64, 10
 w1, w2, w3, b1, b2, b3 = initialize(firstlayersize, secondlayersize, outputsize)
-batchsize = 100
+batchsize, series, learningRate = 100, 3, 0.3 # Series is the number of times you want to run through the whole data set
+epoch = int(np.shape(training_data)[0] / batchsize) # Data set size divided by batch size
 
-# This chunk is soon to be cleaned up and streamlined
-for k in range(3): #If you want to loop over the data multiple times
-    for i in range(int(np.shape(training_data)[0] / batchsize)): # total samples / batchsize
+plt.figure()
+epochs, losses = [], []
+line, = plt.plot(epochs, losses, 'r-')
+plt.xlim(0, epoch * series)
+plt.xlabel("Epoch")
+plt.ylim(0, 250)
+plt.ylabel("Loss")
+
+for k in range(series):
+    for i in range(epoch): # total samples / batchsize
+        # Initialize loss and weight change
         loss = 0
         dw1 = np.zeros((firstlayersize, 784))
         db1 = np.zeros(firstlayersize)
@@ -85,18 +95,28 @@ for k in range(3): #If you want to loop over the data multiple times
         db2 = np.zeros(secondlayersize)
         dw3 = np.zeros((10, secondlayersize))
         db3 = np.zeros(outputsize)
+
+        # Forward, loss calculation, and backward
         for j in range(batchsize):
             z1, z2, z3, a1, a2, a3 = forward(training_data[j + batchsize * i])
             loss += crossEntropy(a3, label[j + batchsize * i])
             dw1, db1, dw2, db2, dw3, db3 = backward(training_data[j + batchsize * i], label[j + batchsize * i], a1, a2, a3, z1, z2, z3, w1, w2, w3, dw1, db1, dw2, db2, dw3, db3)
-        w1 -= 0.1 * dw1 / batchsize
-        b1 -= 0.1 * db1 / batchsize
-        w2 -= 0.1 * dw2 / batchsize
-        b2 -= 0.1 * db2 / batchsize
-        w3 -= 0.1 * dw3 / batchsize
-        b3 -= 0.1 * db3 / batchsize
+
+        # Adjust weights
+        w1 -= learningRate * dw1 / batchsize
+        b1 -= learningRate * db1 / batchsize
+        w2 -= learningRate * dw2 / batchsize
+        b2 -= learningRate * db2 / batchsize
+        w3 -= learningRate * dw3 / batchsize
+        b3 -= learningRate * db3 / batchsize
+
+        # Print loss
         if(i%10 == 0):
-            print("Series", k+1, "Epoch", i, "Loss:", loss)
+            epochs.append(i + (k * epoch))
+            losses.append(loss)
+            line.set_data(epochs, losses)
+            plt.draw()
+            plt.pause(0.01)
 
 # Test on the test data. Prints how many it got wrong
 print("Guessing!")
